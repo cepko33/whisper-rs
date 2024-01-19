@@ -2,7 +2,8 @@
 
 use hound::{SampleFormat, WavReader};
 use std::path::Path;
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
+use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperSysContext, WhisperSysState};
+use core::ffi::c_void;
 
 fn parse_wav_file(path: &Path) -> Vec<i16> {
     let reader = WavReader::open(path).expect("failed to read file");
@@ -52,7 +53,24 @@ fn main() {
     let mut state = ctx.create_state().expect("failed to create key");
     let mut params = FullParams::new(SamplingStrategy::default());
     params.set_initial_prompt("experience");
-    params.set_progress_callback_safe(|progress| println!("Progress callback: {}%", progress));
+    //params.set_progress_callback_safe(|progress| println!("Progress callback: {}%", progress));
+    //params.set_print_realtime(true);
+    unsafe extern "C" fn seg_callback(
+        c: *mut WhisperSysContext,
+        s: *mut WhisperSysState,
+        n: i32,
+        v: *mut c_void
+    ) {
+        println!("{:?}", (*s));
+    }
+
+    unsafe {
+        params.set_new_segment_callback(Some(seg_callback));
+    }
+
+    params.set_n_threads(8);
+    params.set_split_on_word(true);
+    params.set_token_timestamps(true);
 
     let st = std::time::Instant::now();
     state
@@ -64,6 +82,23 @@ fn main() {
         .full_n_segments()
         .expect("failed to get number of segments");
     for i in 0..num_segments {
+        let num_tokens = state
+            .full_n_tokens(i)
+            .expect("failted to get n tokens");
+
+        for j in 0..num_tokens {
+            let token = state
+                .full_get_token_data(i, j)
+                .expect("failed to get full token data");
+
+            let token_text = state
+                .full_get_token_text(i, j)
+                .expect("failed to get full token text");
+
+            println!("[{} - {}]: {}", token.t0, token.t1, token_text);
+
+        }
+        /*
         let segment = state
             .full_get_segment_text(i)
             .expect("failed to get segment");
@@ -73,7 +108,7 @@ fn main() {
         let end_timestamp = state
             .full_get_segment_t1(i)
             .expect("failed to get end timestamp");
-        println!("[{} - {}]: {}", start_timestamp, end_timestamp, segment);
+        */
     }
     println!("took {}ms", (et - st).as_millis());
 }
