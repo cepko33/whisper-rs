@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 hound = "3"
-whisper-rs = { path = "../.." }
+whisper-rs = { path = "../..", features = ["openblas"] }
+whisper-rs-sys = { path = "../../sys", version = "0.8" }
