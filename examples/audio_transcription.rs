@@ -10,7 +10,7 @@ use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextPar
 fn main() -> Result<(), &'static str> {
     // Load a context and model.
     let ctx = WhisperContext::new_with_params(
-        "example/path/to/model/whisper.cpp/models/ggml-base.en.bin",
+        "/home/cepko33/Programs/whisper-rs/sys/whisper.cpp/ggml-large-v3.bin",
         WhisperContextParameters::default(),
     )
     .expect("failed to load model");
@@ -35,7 +35,7 @@ fn main() -> Result<(), &'static str> {
     params.set_print_timestamps(false);
 
     // Open the audio file.
-    let mut reader = hound::WavReader::open("audio.wav").expect("failed to open file");
+    let mut reader = hound::WavReader::open("ep3.wav").expect("failed to open file");
     #[allow(unused_variables)]
     let hound::WavSpec {
         channels,
@@ -62,7 +62,7 @@ fn main() -> Result<(), &'static str> {
     }
 
     if sample_rate != 16000 {
-        panic!("sample rate must be 16KHz");
+        panic!("sample rate must be 16KHz, currently {sample_rate}");
     }
 
     // Run the model.
